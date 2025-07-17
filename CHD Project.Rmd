@@ -1,0 +1,144 @@
+---
+title: "Final Project"
+author: "Sri Sai Nandini Ravi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Question A
+
+```{r}
+data <- read.csv('HeartDisease.csv')
+head(data)
+
+```
+
+```{r}
+TenYearCHD_frequency_table <- table(TenYearCHD = data$TenYearCHD)
+dimnames(TenYearCHD_frequency_table)[[1]] <- c("no", "yes")
+
+print(TenYearCHD_frequency_table)
+```
+
+```{r}
+prevalentStroke_frequency_table <- table(data$prevalentStroke)
+dimnames(prevalentStroke_frequency_table)[[1]] <- c("no", "yes")
+
+print(prevalentStroke_frequency_table)
+
+```
+
+```{r}
+summary(data)
+```
+
+### Question B
+
+```{r}
+Risk_factors <- c("male", "age", "currentSmoker", "BPMeds", "prevalentStroke", "prevalentHyp", "diabetes", "totChol", "sysBP", "diaBP","BMI", "heartRate", "glucose") 
+
+results <- list()
+
+for (variable in Risk_factors) {
+  
+  Logestic_formula <- as.formula(paste("TenYearCHD ~", variable))
+  model <- glm(Logestic_formula, data = data, family = "binomial")
+  
+  odds_ratios <- exp(coef(model))
+  conf_int <- exp(confint(model))
+
+  results[[variable]] <- list(model = model, odds_ratios = odds_ratios, conf_int = conf_int)
+}
+
+```
+
+```{r}
+for (factor in names(results)){
+   cat("Results for", factor, ":\n") 
+   print(coef(results[[factor]]$model))
+   cat("Odds Ratios:\n")
+   print(results[[factor]]$odds_ratios) 
+   cat("95% Confidence Intervals:\n") 
+   print(results[[factor]]$conf_int) 
+   cat("\n\n")
+}
+```
+
+1.  Male: Shows a statistically significant association with CHD (Odds Ratio: 1.67, 95% CI: 1.39-2.00).
+
+2.   Age: Statistically significant (Odds Ratio: 1.08, 95% CI: 1.07-1.09).
+
+3.  Current Smoker: Not statistically significant.
+
+4.  BPMeds: Statistically significant (Odds Ratio: 2.91, 95% CI: 1.92-4.33).
+
+5.  Prevalent Stroke: Statistically significant (Odds Ratio: 3.46, 95% CI: 1.36-8.25).
+
+6.  Prevalent Hypertension: Statistically significant (Odds Ratio: 2.73, 95% CI: 2.27-3.28).
+
+7.   Diabetes: Statistically significant (Odds Ratio: 3.18, 95% CI: 2.06-4.82).
+
+8.  Total Cholesterol: Statistically significant (Odds Ratio: 1.01, 95% CI: 1.00-1.01).
+
+9.  Systolic BP: Statistically significant (Odds Ratio: 1.02, 95% CI: 1.02-1.03).
+
+10. Diastolic BP: Statistically significant (Odds Ratio: 1.03, 95% CI: 1.03-1.04).
+
+11. . BMI: Statistically significant (Odds Ratio: 1.05, 95% CI: 1.03-1.08).
+
+12. Heart Rate: Not statistically significant.
+
+13. Glucose: Statistically significant (Odds Ratio: 1.01, 95% CI: 1.01-1.01).
+
+    These results indicate significant associations for most risk factors with the 10-year risk of CHD, except for current smoking status and heart rate.
+
+### Question C
+
+```{r}
+full_model <- glm(TenYearCHD ~ ., data = data, family = binomial)
+summary(full_model)
+```
+
+```{r}
+significant_predictors <- names(summary(full_model)$coefficients[,"Pr(>|z|)"])[names(summary(full_model)$coefficients[,"Pr(>|z|)"]) < 0.05]
+
+cat("Predictors for which we can reject the null hypothesis H0: Bj=0:\n")
+cat(paste(significant_predictors, collapse = ", "), "\n")
+
+```
+
+```{r}
+library(pROC)
+roc_obj <- roc(data$TenYearCHD, full_model$fitted.values)
+c_index <- auc(roc_obj)
+print(paste("C-index (AUC):", c_index))
+```
+
+```{r}
+# AUC plot
+plot(roc_obj, col = "blue", main = "ROC Curve")
+abline(a = 0, b = 1, lty = 2, col = "red")
+```
+
+The key performance indicators in logistic regression analysis that determine how well the model can categorize individuals are sensitivity and specificity, particularly when dealing with data pertaining to the risk of coronary heart disease (CHD) over a 10-year period (TenYearCHD).\
+\
+Sensitivity, commonly referred to as true positives, measures how well the model predicts who will develop CHD. A greater sensitivity score indicates that the model is capable of accurately identifying those who are susceptible to the illness.\
+\
+Conversely, specificity describes the model's ability to accurately identify true negatives, or people who will not develop CHD. A higher specificity rating indicates that those who are not at risk of CHD are skillfully excluded by the model.
+
+Particularly in medical situations, these measures are essential for assessing how well your prediction model is doing. Effective risk assessment and management require striking a compromise between precisely identifying those who are at danger (high sensitivity) and minimizing needless worry for those who are not at risk (high specificity).
+
+### Question D
+
+```{r}
+selected_model <- step(full_model, direction = "both", trace = 0, criterion = "aic")
+
+print(selected_model)
+summary(selected_model)
+```
+
+A stepwise selection process based on the AIC criterion was used to choose the logistic regression model in an effort to balance model fit and complexity. Significant factors with strong correlations to the risk of coronary heart disease were considered, including age, gender, and systolic blood pressure. On the other hand, less significant p-values were found for variables such as prevalentHyp and prevalentStroke. In spite of this, the total model had a low AIC value, indicating that it describes the data adequately. To verify the model's applicability and forecast accuracy, more testing on different datasets is required.
+
+In the summary provided, some predictors (e.g., age, male, sysBP) have small p-values (**\*\*\***), indicating they are statistically **significant predictors** of CHD risk. Other predictors (e.g., prevalentStroke, prevalentHyp) have larger p-values, suggesting they may not be significant predictors at conventional significance levels.

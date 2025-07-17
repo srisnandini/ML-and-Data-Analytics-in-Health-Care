@@ -1,0 +1,454 @@
+---
+title: "Final Project"
+author: "Sri Sai Nandini Ravi"
+date: "2024-12-13"
+output: pdf_document
+---
+
+```{r}
+#Load Libraries
+library(readr)
+library(readxl)
+library(dplyr)
+```
+```{r, results='hide'}
+# Set the file paths
+data_file <- "C:/Users/ravis/Desktop/final project big data/NSCH_2022e_Topical_CSV_CAHMI_DRCv2.csv"
+labels_file <- "C:/Users/ravis/Desktop/final project big data/NSCH_2022e_CAHMI_DRCv2_CSV_Variable labels.xlsx"
+
+# Load the main dataset
+main_data <- read_csv(data_file)
+
+# Load the variable labels
+variable_labels <- read_excel(labels_file)
+
+# View the structure of the datasets
+glimpse(main_data)
+glimpse(variable_labels)
+
+```
+
+```{r, results='hide'}
+# Summary statistics for all columns
+summary(main_data)
+
+```
+Selecting NeuroGenerative Disease related Variables.
+```{r}
+# Search for NDD-related terms in column names
+ndd_keywords <- c("disability", "ADHD", "autism", "learning", "behavior", "Cerebral Palsy","Tourette Syndrome", "delay", "seizure", "speech", "mental", "development")
+ndd_associated_vars <- grep(paste(ndd_keywords, collapse = "|"), names(main_data), 
+                            value = TRUE, ignore.case = TRUE)
+
+# View the identified variables
+ndd_associated_vars
+
+```
+The variables selected for this analysis are 
+palsy_22 -	Children who currently have cerebral palsy
+DownSynd_22 -	Children who have Down Syndrome
+seizure_22 -	Children who currently have epilepsy or seizure disorder
+tourette_22 -	Children who currently have Tourette Syndrome, age 3-17 years
+anxiety_22 -	Children who currently have anxiety problems, age 3-17 years
+depress_22 -	Children who currently have depression, age 3-17 years
+behavior_22 -	Children who currently have behavioral or conduct problems, age 3-17 years
+DevDelay_22 -	Children who currently have developmental delay, age 3-17 years
+IntDisab_22 -	Children who currently have intellectual disability or mental retardation, age 3-17 years
+speech_22 -	Children who currently have speech or other language disorder, age 3-17 years
+learning_22 -	Children who currently have a learning disability, age 3-17 years
+autism_22 -	Children who currently have autism or autism spectrum disorder including Asperger's Disorder, pervasive developmental disorder, age 3-17 years
+ADHD_22	 - Children who currently have Attention Deficit Disorder (ADD) or Attention-Deficit Hyperactivity Disorder (ADHD), age 3-17 years
+
+```{r}
+
+# List of variables associated with NDD
+ndd_variables1 <- c(
+  "palsy_22",        # Cerebral palsy
+  "DownSynd_22",     # Down Syndrome
+  "seizure_22",      # Epilepsy or seizure disorder
+  "tourette_22",     # Tourette Syndrome
+  "anxiety_22",      # Anxiety problems
+  "depress_22",      # Depression
+  "behavior_22",     # Behavioral or conduct problems
+  "DevDelay_22",     # Developmental delay
+  "IntDisab_22",     # Intellectual disability
+  "speech_22",       # Speech or language disorder
+  "learning_22",     # Learning disability
+  "autism_22",       # Autism spectrum disorder
+  "ADHD_22"          # ADD or ADHD
+)
+
+# Subset the data
+ndd_subset1 <- main_data[, ndd_variables1, drop = FALSE]
+
+# View the first few rows of the subsetted data
+head(ndd_subset1)
+
+# Save the subsetted dataset to a CSV file
+write.csv(ndd_subset1, "C:/Users/ravis/Desktop/final project big data/ndd_subset1.csv", row.names = FALSE)
+
+```
+```{r, echo=FALSE}
+colSums(is.na(ndd_subset1))
+# Replace '99' with NA in the subset
+ndd_subset1[ndd_subset1 == 99] <- NA
+# Replace all NA values in ndd_subset1 back to 99
+ndd_subset1[is.na(ndd_subset1)] <- 99
+
+```
+```{r}
+summary(ndd_subset1)
+```
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+
+# Loop through all variables and create plots
+plots <- list()  # Create an empty list to store plots
+
+for (var in ndd_variables1) {
+  # Replace NA with "Missing" and retain original data
+  temp_data <- ndd_subset1
+  temp_data[[var]] <- ifelse(is.na(temp_data[[var]]), "Missing", as.character(temp_data[[var]]))
+  
+  # Generate bar plot for each variable
+  p <- ggplot(temp_data, aes_string(x = var)) +
+    geom_bar(fill = "steelblue") +
+    labs(title = paste("Distribution of", var), x = "Severity Level", y = "Count") +
+    theme_minimal()
+  
+  # Store plot in the list
+  plots[[var]] <- p
+}
+
+# Display all plots (example: print first 4 plots together)
+grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2)
+
+
+```
+```{r}
+# Save the subsetted dataset to a CSV file
+write.csv(ndd_subset1, "C:/Users/ravis/Desktop/final project big data/ndd_subset1.csv", row.names = FALSE)
+```
+
+
+
+```{r, results='hide'}
+# View all column names in the dataset
+colnames(main_data)
+
+```
+Selecting 20 Risk factors or indipendent variables.
+
+```{r}
+# Corrected list of selected variables based on actual column names
+selected_risk_factors <- c(
+  "SC_AGE_YEARS",       # Age
+  "SC_SEX",             # Gender
+  "SC_RACE_R",          # Race/Ethnicity
+  "BMI3_22",            # BMI
+  "PHYSACTIV",          # Physical activity
+  "SCREENTIME",         # Time spent watching TV or devices
+  "HOURSLEEP",          # Sleep hours
+  "ALLERGIES",          # Allergies
+  "DIABETES",           # Diabetes
+  "HEART",              # Heart conditions
+  "DiffMem_22",        # difficulty in concentrating 
+  "BrainInjTold_22",    # Brain Injury
+  "BloodSev_22",       #  Severity of Child's Blood Disorder
+  "bullied_22",         # Childern who got bullied
+  "GenetSev_22",        # Severity in current genetic or inherited condition
+  "smoking_22",         # Smoking environment 
+  "NbhdSafe_22",        # Neighborhood safety
+  "EmSFamily_22",       # Emotional support from family 
+  "MealTogether_22",    # Meals together 
+  "housing_22"          # Housing conditions 
+)
+
+# Subset the dataset to include only the corrected variables
+risk_factor_subset1  <- main_data[, selected_risk_factors, drop = FALSE]
+
+# View the first few rows of the subsetted dataset
+head(risk_factor_subset1)
+
+
+
+```
+
+
+```{r, echo=FALSE, results='hide'}
+colSums(is.na(risk_factor_subset1))
+# Replace '99' with NA in the subset
+risk_factor_subset1[risk_factor_subset1 == 99] <- NA
+# Replace NA values with 90 or 95 (assumes these were the only changes)
+risk_factor_subset1[is.na(risk_factor_subset1)] <- 90  # Replace all NA with 90 (adjust if needed)
+
+summary(risk_factor_subset1)
+
+```
+
+```{r, echo=FALSE, results='hide'}
+# Replace unusual values (90, 95) with NA
+risk_factor_subset1[risk_factor_subset1 %in% c(90, 95)] <- NA
+# Check missing values
+colSums(is.na(risk_factor_subset1))
+# Replace NA values with 90 or 95 (assumes these were the only changes)
+risk_factor_subset1[is.na(risk_factor_subset1)] <- 90  # Replace all NA with 90 (adjust if needed)
+
+# Summarize data
+summary(risk_factor_subset1)
+
+```
+
+```{r}
+# Impute missing values with the median for numeric columns
+risk_factor_subset1 <- risk_factor_subset1 %>%
+  mutate(across(where(is.numeric), ~ ifelse(is.na(.), median(., na.rm = TRUE), .)))
+# Check missing values
+colSums(is.na(risk_factor_subset1))
+summary(risk_factor_subset1)
+```
+
+```{r}
+# Save the subsetted data to a new CSV file
+write.csv(risk_factor_subset1, "C:/Users/ravis/Desktop/final project big data/risk_factor_subset1.csv", row.names = FALSE)
+
+```
+
+##Now that I have 2 subsets one with NDD associate variables and the other with indipendent variables which are risk factor varaibles, Further we are examining the associations between the characteristics of participants and outcomes.
+
+###Step 1: Explore Associations Between Participant Characteristics and Outcomes
+
+Before we look at relationships, we are examine summary statistics for both subsets:
+```{r}
+
+# Summary statistics for NDD subset
+summary(ndd_subset1)
+
+# Summary statistics for risk factor subset
+summary(risk_factor_subset1)
+
+# Visualize distribution of key variables
+library(ggplot2)
+
+# Example: Distribution of Physical Activity Levels
+ggplot(risk_factor_subset1, aes(x = factor(DiffMem_22))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution of Physical Activity", x = "Physical Activity Level", y = "Count")
+
+# Distribution of ADHD Severity
+ggplot(ndd_subset1, aes(x = factor(ADHD_22))) +
+  geom_bar(fill = "lightcoral", color = "black") +
+  labs(title = "Distribution of ADHD", x = "ADHD Level", y = "Count")
+
+```
+
+Correlation Analysis
+```{r, results='hide'}
+# Combine both subsets into a single dataframe
+combined_data <- cbind(ndd_subset1, risk_factor_subset1)
+
+# Select only numeric columns for correlation
+numeric_data <- combined_data %>% select(where(is.numeric))
+
+# Compute correlation matrix
+cor_matrix <- cor(numeric_data, use = "pairwise.complete.obs")
+
+# View the correlation matrix
+print(cor_matrix)
+```
+
+```{r}
+# Heatmap of correlations
+library(ggplot2)
+library(reshape2)
+
+# Melt correlation matrix for heatmap
+melted_cor <- melt(cor_matrix)
+
+# Plot heatmap
+ggplot(data = melted_cor, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(title = "Correlation Heatmap", x = "Variables", y = "Variables")
+
+```
+
+
+
+```{r}
+#Converting the required varaibles to categorical and ordinal to understand the the varaible types. 
+# Convert selected variables to categorical (factors)
+risk_factor_subset1 <- risk_factor_subset1 %>%
+  mutate(
+    SC_SEX = as.factor(SC_SEX),
+    SC_RACE_R = as.factor(SC_RACE_R),
+    PHYSACTIV = as.factor(PHYSACTIV),
+    ALLERGIES = as.factor(ALLERGIES),
+    DIABETES = as.factor(DIABETES),
+    HEART = as.factor(HEART),
+    NbhdSafe_22 = as.factor(NbhdSafe_22),
+    EmSFamily_22 = as.factor(EmSFamily_22),
+    MealTogether_22 = as.factor(MealTogether_22),
+    housing_22 = as.factor(housing_22)
+  )
+
+# Verify the changes
+str(risk_factor_subset1)  # Check data types
+summary(risk_factor_subset1)  # Summarize to ensure conversion
+
+```
+Statistical Analysis
+```{r, results='hide'}
+#Chi-Square Tests for each NDD outcome vs risk factor
+# Perform Chi-Square Tests for each NDD outcome vs risk factor
+chi_square_results <- list()
+
+# Loop over all columns in ndd_subset1
+for (outcome in colnames(ndd_subset1)) {
+  for (factor in colnames(risk_factor_subset1)) {
+    # Chi-Square Test
+    test <- chisq.test(table(ndd_subset1[[outcome]], risk_factor_subset1[[factor]]), simulate.p.value = TRUE)
+    chi_square_results[[paste(outcome, factor, sep = "_vs_")]] <- test$p.value
+  }
+}
+
+# Display significant associations
+significant_results <- chi_square_results[unlist(chi_square_results) < 0.05]
+print("Significant Associations:")
+print(significant_results)
+
+
+
+```
+```{r}
+# Example visualization for ADHD and Physical Activity
+library(ggplot2)
+ggplot(data = cbind(ndd_subset1, risk_factor_subset1), aes(x = PHYSACTIV, fill = factor(ADHD_22))) +
+  geom_bar(position = "fill") +
+  labs(title = "Association Between Physical Activity and ADHD", x = "Physical Activity", y = "Proportion", fill = "ADHD") +
+  theme_minimal()
+
+
+```
+To investigate the relationship between risk factors and outcomes using a machine learning model, using a Random Forest Classifier can handle non-linear relationships, provides insights into variable importance, and works well for datasets with categorical and numerical variables.
+
+```{r, results='hide'}
+# Load required libraries
+library(randomForest)
+library(caret)  # For data splitting and evaluation
+# Combine outcomes and risk factors into one dataset
+ml_data <- cbind(ndd_subset1, risk_factor_subset1)
+
+# Remove rows with missing values
+ml_data <- na.omit(ml_data)
+
+# Verify the structure of the combined dataset
+str(ml_data)
+
+
+
+```
+Split the Data into Training and Testing Sets
+
+```{r}
+# Split the data into training (70%) and testing (30%) sets
+set.seed(123)  # For reproducibility
+trainIndex <- createDataPartition(ml_data$DevDelay_22, p = 0.7, list = FALSE) #  
+train_data <- ml_data[trainIndex, ]
+test_data <- ml_data[-trainIndex, ]
+
+```
+
+Train the Random Forest Model
+Fit the model using the training dataset.
+```{r}
+# Train a Random Forest model
+rf_model <- randomForest(as.factor(DevDelay_22) ~ ., data = train_data, ntree = 500, importance = TRUE)  #
+# Print the model summary
+print(rf_model)
+
+# Plot variable importance
+varImpPlot(rf_model)
+
+```
+
+Evaluate the Model on the Test Set
+Assess the model’s performance on the testing dataset.
+```{r}
+# Predict outcomes on the test set
+rf_predictions <- predict(rf_model, test_data, type = "response")
+
+# Confusion matrix
+confusionMatrix(as.factor(rf_predictions), as.factor(test_data$DevDelay_22))
+
+```
+Analyze Variable Importance
+Random Forest provides a ranking of the most important predictors.
+
+```{r}
+# Extract variable importance
+importance(rf_model)
+
+```
+
+```{r}
+
+# Plot variable importance
+varImpPlot(rf_model, main = "Variable Importance")
+
+```
+ Investigate Model Performance
+We now need to evaluate how well the Random Forest model performed:
+
+Use a Confusion Matrix to check prediction accuracy.
+Calculate performance metrics like Accuracy, Precision, Recall, and F1-Score.
+```{r}
+# Load caret for evaluation metrics
+library(caret)
+
+# Predict outcomes using the Random Forest model
+predictions <- predict(rf_model, newdata = test_data)
+
+# Convert predictions and true outcomes to factors
+predictions <- as.factor(predictions)
+true_outcomes <- as.factor(test_data$DevDelay_22) 
+# Generate confusion matrix
+conf_matrix <- confusionMatrix(predictions, true_outcomes)
+
+# Print confusion matrix and overall statistics
+print(conf_matrix)
+
+```
+ROC curves are only meaningful for binary classification. If our target variable (e.g., behavior_22) has multiple classes, we need to:
+
+Convert it into a binary outcome (e.g., one class vs. all other classes).
+
+```{r}
+# Convert target variable to binary (Class 1 vs. others)
+binary_outcome <- ifelse(test_data$DevDelay_22 == 1, 1, 0)
+# Predict probabilities for Class 1
+predicted_probs <- predict(rf_model, newdata = test_data, type = "prob")[, 1]  # Prob for Class 1
+# Load pROC library
+library(pROC)
+
+# Create ROC curve
+roc_curve <- roc(binary_outcome, predicted_probs)
+
+# Plot the ROC curve
+plot(roc_curve, col = "blue", main = "ROC Curve for behavior_22 (Class 1 vs All)")
+
+
+```
+```{r}
+# Print the AUC value
+auc_value <- auc(roc_curve)
+print(paste("AUC:", round(auc_value, 3)))
+
+```
+
+

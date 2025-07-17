@@ -1,0 +1,115 @@
+---
+title: "Mid Term Project"
+author: "Nandini"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+## Question 1:
+
+```{r}
+data<-read.csv('PBC312.csv')
+str(data)
+```
+
+```{r}
+data$trt <- factor(data$trt, levels = c(1, 2), labels = c("D-penicillamine", "Placebo"))
+
+data$ascites <- factor(data$ascites, levels = c(0, 1), labels = c("NO","YES"))
+
+data$edema <- factor(data$edema, levels = c(0, 0.5,1), labels = c("No edema","Untreated","Succesfully Treated"))
+
+data$hepato <- factor(data$hepato, levels = c(0, 1), labels = c("NO","YES"))
+
+data$spiders <- factor(data$spiders, levels = c(0, 1), labels = c("NO","YES"))
+
+data$stage <- factor(data$stage)
+str(data)
+```
+
+```{r}
+head(data)
+```
+
+### **Question 2.  Statistical Analysis Plan to Summarize Characteristics of the Data Set:**
+
+#### a. Data Preparation:
+
+-   Handling any missing values appropriately (imputation or removal).
+
+-   Checking and ensuring the correct data types for each variable.
+
+-   Converting numeric levels to factors according to the data dictionary.
+
+-   Finding outliers in the dataset using Z-score
+
+#### b. Descriptive Statistics:
+
+-   Computing descriptive statistics for the entire dataset, including mean, median, standard deviation for continuous variables, and frequencies for categorical variables.
+
+-   Generating visualizations (e.g., histograms, boxplots) for better understanding of variable distributions.
+
+#### c. Inferential Statistics:
+
+-   performing suitable statistical tests based on the nature of variables:
+
+    -   For continuous variables, we perform t-tests or non-parametric tests.
+
+    -   For categorical variables, we perform chi-square tests or Fisher's exact tests.
+
+-   Conducting pairwise comparisons between treatment groups.
+
+-   Adjusting p-values for multiple comparisons if needed.
+
+## Question 3.
+
+**Provide your "Table 1":  Demographic and Clinical Characteristics of the Patients according to the treatment strtegies ( D-penicillmain vs. placebo).    In the table, you should present**
+
+**a) suitable descriptive statistics in the table for variables in total, D-penicillmain, and placebo groups, respectively.**
+
+**b) results (p-values) derived from inferential statistics for comparison of patients for each variable between D-penicillmain and placebo groups.**
+
+**You should specify your statistical test methods for obtaining p-value for each variable. Note missing values in the data.** 
+
+```{r}
+library(tableone)
+
+vars <- c("age", "sex", "ascites", "hepato", "spiders", "edema", "bili", "chol", "albumin","copper","alk.phos",	"ast", "trig",	"platelet",	"protime",	"stage")
+
+# Creating Table 1
+table1 <- CreateTableOne(vars = vars, strata = "trt", data = data,test=TRUE ,includeNA = FALSE)
+
+print(table1)
+```
+
+I have used CreateTableOne function in the Tableone library to create the Table1 and it has inbuilt function to compute the p-values for each variable. for numeric variables it performs t-test where as for catergorical data variables it perfroms chi-square test. and coming to the missing values, the Tableone has inbuilt fucntion to exclude NA values. so, using that I have exclude all the NA values in the data while computing the statistics and p-value tests.
+
+## Question 4: 
+
+#### Provide your "Result" paragraph(s), summarzing the results based on the "Table 1".
+
+The Table 1 presents a comprehensive summary of the demographic and clinical characteristics of patients stratified by treatment strategies (D-penicillamine vs. Placebo) for the Mayo Clinic trial in Primary Sclerosing Cholangitis (PSC). The analysis includes 312 patients, with 158 receiving D-penicillamine and 154 receiving Placebo.
+
+1.  **Age:**
+
+    -   The mean age for patients receiving D-penicillamine is 51.42 years (SD = 11.01), while for those on Placebo, it is 48.58 years (SD = 9.96).
+
+    -   The difference in age between the two groups is statistically significant (p = 0.018), indicating a notable age distinction.
+
+2.  **Sex:**
+
+    -   The distribution of gender shows no significant difference between the D-penicillamine and Placebo groups (p = 0.421).
+
+3.  **Clinical Characteristics:**
+
+    -   Various clinical characteristics, such as the presence of ascites, hepatomegaly (hepato), blood vessel malformations (spiders), and edema, show no significant differences between the two groups.
+
+4.  **Laboratory Values:**
+
+    -   Serum bilirubin (bili), serum cholesterol (chol), albumin, copper, alkaline phosphotase (alk.phos), aspartate aminotransferase (ast), triglycerides (trig), platelet count, and prothrombin time (protime) exhibit no statistically significant differences between the two groups.
+
+5.  **Histologic Stage:**
+
+    -   The distribution across histologic stages (1 through 4) shows no significant difference between the D-penicillamine and Placebo groups (p = 0.201).
+
+The p-values accompanying each comparison were calculated using appropriate statistical tests automatically by the **`createTableOne`** function. The results suggest that, for the variables considered, there are generally no substantial differences between patients receiving D-penicillamine and those on Placebo, except for the observed age difference. These findings provide valuable insights into the baseline characteristics of patients in the context of the PSC trial, aiding in the interpretation of treatment outcomes.
